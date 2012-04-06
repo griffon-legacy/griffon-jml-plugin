@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 the original author or authors.
+ * Copyright 2010-2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package griffon.plugins.jml
 
 import net.sf.jml.MsnMessenger
@@ -27,19 +28,10 @@ import griffon.util.CallableWithArgs
  * @author Andres Almiray
  */
 @Singleton
-final class MessengerConnector {
+final class MessengerConnector implements MessengerProvider {
     private final Object lock = new Object()
     private boolean connected = false
     private GriffonApplication app
-
-    static void enhance(MetaClass mc) {
-        mc.withMessenger = {Closure closure ->
-            MessengerHolder.instance.withMessenger(closure)   
-        }
-        mc.withMessenger << {CallableWithArgs callable ->
-            MessengerHolder.instance.withMessenger(callable)   
-        }        
-    }
 
     Object withMessenger(Closure closure) {
         return MessengerHolder.instance.withMessenger(closure) 
@@ -65,7 +57,7 @@ final class MessengerConnector {
         this.app = app
         app.event('MessengerConnectStart', [config])
         createMessenger(config)
-        app.event('MessengerConnectEnd', [MessengerHolder.instance.messenger])
+        app.event('MessengerConnectEnd', [config, MessengerHolder.instance.messenger])
     }
 
     void disconnect(GriffonApplication app, ConfigObject config) {
@@ -79,7 +71,7 @@ final class MessengerConnector {
             MessengerHolder.instance.messenger.logout()
             MessengerHolder.instance.messenger = null
         }
-        app.event('MessengerDisconnectEnd')
+        app.event('MessengerDisconnectEnd', [config])
     }
 
     private void createMessenger(ConfigObject config) {

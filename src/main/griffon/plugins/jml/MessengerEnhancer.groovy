@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 the original author or authors.
+ * Copyright 2012 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,24 @@ package griffon.plugins.jml
 
 import net.sf.jml.MsnMessenger
 import griffon.util.CallableWithArgs
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * @author Andres Almiray
  */
-@Singleton
-class MessengerHolder implements MessengerProvider {
-    MsnMessenger messenger
+final class MessengerEnhancer {
+    private static final Logger LOG = LoggerFactory.getLogger(MessengerEnhancer)
 
-    Object withMessenger(Closure closure) {
-        return closure(messenger)
-    }
+    private MessengerEnhancer() {}
     
-    public <T> T withMessenger(CallableWithArgs<T> callable) {
-        callable.args = [messenger] as Object[]
-        return callable.run()
+    static void enhance(MetaClass mc, MessengerProvider provider = MessengerHolder.instance) {
+        if(LOG.debugEnabled) LOG.debug("Enhancing $mc with $provider")
+        mc.withMessenger = {Closure closure ->
+            provider.withMessenger('default', closure)
+        }
+        mc.withMessenger << {CallableWithArgs callable ->
+            provider.withMessenger('default', callable)
+        }
     }
 }
